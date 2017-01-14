@@ -1,4 +1,4 @@
-var MYSQL_RECONNECT_INTERVAL = 1000;
+var MONGODB_RECONNECT_INTERVAL = 1000;
 var MEMCACHED_LIFETIME = 10;
 var MEMCACHED_TIMEOUT = 100;
 var ERR_MEMCACHED_DEAD = "Error: memcached dead";
@@ -9,7 +9,7 @@ var NO_ROOT = process.argv[2] === "--no-root";
 // DEPENDENCIES
 var express = require("express");
 var bodyParser = require("body-parser");
-var mysql = require("mysql");
+//var mysql = require("mysql");
 var parallel = require("async").parallel;
 var Memcached = require('memcached');
 var _ = require("lodash");
@@ -19,8 +19,11 @@ var stream = require("stream");
 var cors = require("cors");
 var async = require("async");
 var config = require("./config.json");
+var mongodb = require('mongodb');
 
-//getCarUrl es una funcio asincrona que executa un callback amb la (url d'un cotxe)
+
+
+/*//getCarUrl es una funcio asincrona que executa un callback amb la (url d'un cotxe)
 var getCarUrl = function (car, cb) {
   //async.parallel executa les funcions dintre de [] a la vegada
   //quan acaben d'executarse, s'executa la ultima
@@ -55,7 +58,9 @@ var getCarUrl = function (car, cb) {
     cb(err, "img/cars/" + car.maker.name + "_" + car.name + "_" + car.color.name + ".jpg");
   });
 };
+*/
 
+/*
 // Rep els filtres i genera les consultes SQL
 function getConsulta (filter) {
   // Valors per defecte de offset i limit si aquests no es proporcionen
@@ -117,52 +122,58 @@ function getConsulta (filter) {
   // Retornem la variable que conte la consulta
   return consulta;
 }
+*/
 
 var app = express();
 
 // Variable que indica l'estat del servidor mysql (false = caigut)
-var mysqlStatus = false;
+var mongoDBStatus = false;
 
 // Declarem la variable de conexio fora per que hi tingui acces
 // la resta del programa
 var con;
 
 function connectaBaseDades() {
-  console.log("Intentant connectar al servidor MySQL");
+  console.log("Intentant connectar al servidor MongoDB");
 
   // La funcio connectaBaseDades inicia la conexio, per tant,
   // per definicio, la conexio esta offline fins que no tingui exit
-  mysqlStatus = false;
+  mongoDBStatus = false;
 
-  // Creem una conexio a la BDD
-  con = mysql.createConnection({
-    host: config.mysql.ip,
-    user: 'root',
-    password: '',
-    database: 'cars'
-  });
+  //Conexio a la BDD
+  //We need to work with "MongoClient" interface in order to connect to a mongodb server.
+  var MongoClient = mongodb.MongoClient;
 
-  // Ens conectem a la BDD
-  con.connect(function(err) {
+  // Connection URL. This is where your mongodb server is running.
+  var url = 'mongodb://localhost:27017/chatdb';
+
+  // Use connect method to connect to the Server
+  MongoClient.connect(url, function (err, db) {
     if (err) {
-      // En cas d'error, mostrar per consola
-      console.error('Error conectant a MySql: ' + err.code);
+      console.error('Error conectant a MongoDB: ' + err.code);
 
       // La conexio ha fallat, per tant el server esta offline
-      mysqlStatus = false;
+      mongoDBStatus = false;
 
-      console.log("Tornant a intentar en " + MYSQL_RECONNECT_INTERVAL + " milis");
-      // Tornem a intentar la conexio cada MYSQL_RECONNECT_INTERVAL segons
-      setTimeout(connectaBaseDades, MYSQL_RECONNECT_INTERVAL);
+      console.log("Tornant a intentar en " + MONGODB_RECONNECT_INTERVAL + " milis");
+      // Tornem a intentar la conexio cada MONGODB_RECONNECT_INTERVAL segons
+      setTimeout(connectaBaseDades, MONGODB_RECONNECT_INTERVAL);
+      connectaBaseDades();
+
     } else {
-        // Mostrem per consola que la conexio a la BDD ha sigut satisfactoria
-        console.log('Conectat a MySql amb id: ' + con.threadId);
+      // We are connected. :)
+      console.log('Connection established to', url);
 
-        // La conexio ha tingut exit per tant el servidor esta online
-        mysqlStatus = true;
+      mongoDBStatus = true;
+
+      //Close connection
+      db.close();
     }
   });
 
+  // embolcar mongo.connect sobre altre function i utilitzar en routes
+
+/*
   // Quan la conexio a mysql pateix un error, el mostrem per consola i intentem reconectar
   con.on('error', function (err) {
     console.error("Error de conexio a la BDD");
@@ -170,6 +181,7 @@ function connectaBaseDades() {
 
     connectaBaseDades();
   });
+  */
 }
 
 // Iniciem la conexio a mysql
@@ -335,7 +347,7 @@ app.post("/login", function (req, res) {
 });
 
 // Ruta per crear usuaris nous
-app.post("/signup", function (req, res) {
+/*app.post("/signup", function (req, res) {
   console.log("Peticio /signup");
 
   var id = req.body.id,
@@ -360,7 +372,7 @@ app.post("/signup", function (req, res) {
     else
       res.send({success: true});
   })
-});
+});*/
 
 //setPreferences envia JSON al servidor amb les preferencies del usuari.
 //Un usuari pot tenir molts tipus de musica preferida (rap, rock, heavy, etc). ->
