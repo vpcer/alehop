@@ -380,8 +380,6 @@ app.post("/setPreferences", function (req, res) {
           req.body.literature,
           req.body.hobbies
       ];
-
-  queryDB("INSERT INTO")
 });
 
 // Ruta getCars retorna les dades de la crida de la BDD en JSON
