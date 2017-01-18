@@ -132,6 +132,14 @@ var mongoDBStatus = false;
 // Declarem la variable de conexio fora per que hi tingui acces
 // la resta del programa
 var con;
+var mongoCon;
+
+//Conexio a la BDD
+//We need to work with "MongoClient" interface in order to connect to a mongodb server.
+var MongoClient = mongodb.MongoClient;
+
+// Connection URL. This is where your mongodb server is running.
+var url = 'mongodb://localhost:27017/chatdb';
 
 function connectaBaseDades() {
   console.log("Intentant connectar al servidor MongoDB");
@@ -139,13 +147,6 @@ function connectaBaseDades() {
   // La funcio connectaBaseDades inicia la conexio, per tant,
   // per definicio, la conexio esta offline fins que no tingui exit
   mongoDBStatus = false;
-
-  //Conexio a la BDD
-  //We need to work with "MongoClient" interface in order to connect to a mongodb server.
-  var MongoClient = mongodb.MongoClient;
-
-  // Connection URL. This is where your mongodb server is running.
-  var url = 'mongodb://localhost:27017/chatdb';
 
   // Use connect method to connect to the Server
   MongoClient.connect(url, function (err, db) {
@@ -163,15 +164,11 @@ function connectaBaseDades() {
     } else {
       // We are connected. :)
       console.log('Connection established to', url);
-
+      mongoCon = db;
       mongoDBStatus = true;
 
-      //Close connection
-      db.close();
     }
   });
-
-  // embolcar mongo.connect sobre altre function i utilitzar en routes
 
 /*
   // Quan la conexio a mysql pateix un error, el mostrem per consola i intentem reconectar
@@ -347,7 +344,7 @@ app.post("/login", function (req, res) {
 });
 
 // Ruta per crear usuaris nous
-/*app.post("/signup", function (req, res) {
+app.post("/signup", function (req, res) {
   console.log("Peticio /signup");
 
   var id = req.body.id,
@@ -358,6 +355,22 @@ app.post("/login", function (req, res) {
       age = req.body.age;
 
 
+//EXEMPLE DE UTILITZACIO DE MONGODB AMB LA VARIABLE GLOBAL mongoCon = db
+    // Get the documents collection
+    var collection = mongoCon.collection('users');
+
+    //Create some users
+    var user1 = {name: 'modulus admin', age: 42, roles: ['admin', 'moderator', 'user']};
+    var user2 = {name: 'modulus user', age: 22, roles: ['user']};
+    var user3 = {name: 'modulus super admin', age: 92, roles: ['super-admin', 'admin', 'moderator', 'user']};
+
+    // Insert some users
+    collection.insert([user1, user2, user3], function (err, result) {
+      if (err) {
+        console.log(err);
+      } else {
+        console.log('Inserted %d documents into the "users" collection. The documents inserted with "_id" are:', result.length, result);
+      }
 
   // Query que insereix el nou usuari a la taula users
   queryDB("INSERT INTO users (id, name, surname1, surname2, gender, age) VALUES (" + id + ", '" + name + "','" + surname1 "','" + surname2 "','" + gender "'," + age ")", true, function (err, rows) {
@@ -372,7 +385,7 @@ app.post("/login", function (req, res) {
     else
       res.send({success: true});
   })
-});*/
+});
 
 //setPreferences envia JSON al servidor amb les preferencies del usuari.
 //Un usuari pot tenir molts tipus de musica preferida (rap, rock, heavy, etc). ->
